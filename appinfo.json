@@ -1,0 +1,19 @@
+{
+  "uuid": "42e57aff-ad56-4a2f-a951-b0e10b82400f",
+  "shortName": "chrono-ring",
+  "longName": "chrono-ring",
+  "companyName": "MakeAwesomeHappen",
+  "versionLabel": "1.0",
+  "sdkVersion": "3",
+  "targetPlatforms": ["aplite", "basalt", "chalk"],
+  "enableMultiJS": true,
+  "watchapp": {
+    "watchface": false
+  },
+  "appKeys": {
+    "dummy": 0
+  },
+  "resources": {
+    "media": []
+  }
+}

@@ -15,6 +15,7 @@ static void update_time() {
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
 
+  s_minute_angle = fraction_to_angle(tick_time->tm_min, 60);
   static char s_hour_buffer[sizeof("00")];
   strftime(
     s_hour_buffer,
@@ -31,7 +32,7 @@ static void update_time() {
 
 static void update_minute_position() {
   GPoint new_point = gpoint_from_point(CENTER_GPOINT, 60, s_minute_angle);
-  GRect frame = GRect(new_point.x - 19, new_point.y - 17, 40, 30);
+  GRect frame = GRect(new_point.x - 20, new_point.y - 17, 40, 30);
   layer_set_frame(text_layer_get_layer(s_minute_layer), frame);
   layer_mark_dirty(text_layer_get_layer(s_minute_layer));
 }
@@ -67,7 +68,6 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
       angle_start,
       angle_end
   );
-  s_minute_angle = fraction_to_angle(tick_time->tm_min, 60);
   angle_start = s_minute_angle + (minutes_ring_cutout_angle / 2);
   angle_end = (s_minute_angle - (minutes_ring_cutout_angle / 2)) + TRIG_MAX_ANGLE;
 
@@ -112,6 +112,7 @@ static void main_window_load(Window *window) {
   layer_set_update_proc(s_canvas_layer, canvas_update_proc);
 
   update_time();
+  update_minute_position();
 
   layer_add_child(window_layer, s_canvas_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_hour_layer));
@@ -120,6 +121,7 @@ static void main_window_load(Window *window) {
 
 static void main_window_unload(Window *window) {
   text_layer_destroy(s_hour_layer);
+  text_layer_destroy(s_minute_layer);
 }
 
 static void init() {

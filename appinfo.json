@@ -1,11 +1,11 @@
 {
   "uuid": "42e57aff-ad56-4a2f-a951-b0e10b82400f",
-  "shortName": "chrono-ring",
-  "longName": "chrono-ring",
-  "companyName": "MakeAwesomeHappen",
+  "shortName": "Chrono Ring",
+  "longName": "Chrono Ring",
+  "companyName": "rperryng",
   "versionLabel": "1.0",
   "sdkVersion": "3",
-  "targetPlatforms": ["aplite", "basalt", "chalk"],
+  "targetPlatforms": ["chalk"],
   "capabilities": ["configurable"],
   "enableMultiJS": true,
   "watchapp": {
@@ -16,7 +16,8 @@
     "hour_ring_color": 1,
     "hour_circle_color": 2,
     "minute_text_color": 3,
-    "minute_ring_color": 4
+    "minute_ring_color": 4,
+    "background_color": 5
   },
   "resources": {
     "media": []

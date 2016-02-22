@@ -39,6 +39,12 @@
         "appKey": "minute_ring_color",
         "defaultValue": "00AAAA",
         "label": "Minute Ring Color"
+      },
+      {
+        "type": "color",
+        "appKey": "background_color",
+        "defaultValue": "FFFFFF",
+        "label": "Background Color"
       }
     ]
   },

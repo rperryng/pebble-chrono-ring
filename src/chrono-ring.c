@@ -14,13 +14,17 @@ static int s_hour_angle = 0;
 
 static const int RING_CUTOUT_ANGLE = DEG_TO_TRIGANGLE(40);
 
-// CONFIG
+// CONFIG ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 enum APP_MESSAGE_KEYS {
   HOUR_TEXT_COLOR,
   HOUR_RING_COLOR,
   HOUR_CIRCLE_COLOR,
   MINUTE_TEXT_COLOR,
-  MINUTE_RING_COLOR
+  MINUTE_RING_COLOR,
+  BACKGROUND_COLOR,
+
+  // The value of the last element in an enum is the number of items
+  NUM_APP_MESSAGE_KEYS
 };
 
 static void update_config() {
@@ -36,6 +40,11 @@ static void update_config() {
     text_layer_set_text_color(s_minute_layer, color);
   }
 
+  if (persist_exists(BACKGROUND_COLOR)) {
+    color = GColorFromHEX(persist_read_int(BACKGROUND_COLOR));
+    window_set_background_color(s_main_window, color);
+  }
+
   layer_mark_dirty(s_canvas_layer);
 }
 
@@ -46,7 +55,7 @@ static void in_dropped_handler(AppMessageResult reason, void *context) {
 static void in_received_handler(DictionaryIterator *received, void *context) {
   Tuple *tuple;
 
-  for (int key = HOUR_TEXT_COLOR; key <= MINUTE_RING_COLOR; key++) {
+  for (int key = HOUR_TEXT_COLOR; key < NUM_APP_MESSAGE_KEYS; key++) {
     tuple = dict_find(received, key);
     if (tuple) {
       APP_LOG(APP_LOG_LEVEL_DEBUG, "saving appkey: %d, %x", key, (int) tuple->value->int32);
@@ -58,7 +67,7 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
   update_config();
 }
 
-// UI
+// UI ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 static void update_time_text(struct tm *tick_time) {
   s_minute_angle = fraction_to_angle(tick_time->tm_min, 60);
   static char s_hour_buffer[sizeof("00")];
@@ -76,9 +85,9 @@ static void update_time_text(struct tm *tick_time) {
 }
 
 static void update_minute_position() {
-  static const int x = 40;
-  static const int y = 40;
-  static const int length = 66;
+  const int x = 40;
+  const int y = 40;
+  const int length = 66;
   GPoint new_point = gpoint_from_point(CENTER_GPOINT, length, s_minute_angle);
   GRect frame = GRect(new_point.x - (x / 2), new_point.y - (y / 2), x, y);
   layer_set_frame(text_layer_get_layer(s_minute_layer), frame);
@@ -158,7 +167,7 @@ static void main_window_load(Window *window) {
   // App message
   app_message_register_inbox_dropped(in_dropped_handler);
   app_message_register_inbox_received(in_received_handler);
-  const int inbox_size = (sizeof(int) * 2) * 5;
+  const int inbox_size = (sizeof(int) * 2) * NUM_APP_MESSAGE_KEYS;
   const int outbox_size = inbox_size;
   app_message_open(inbox_size, outbox_size);
 

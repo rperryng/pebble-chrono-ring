@@ -12,7 +12,11 @@
     "watchface": true
   },
   "appKeys": {
-    "dummy": 0
+    "hour_text_color": 0,
+    "hour_ring_color": 1,
+    "hour_circle_color": 2,
+    "minute_text_color": 3,
+    "minute_ring_color": 4
   },
   "resources": {
     "media": []

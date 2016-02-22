@@ -1,10 +1,49 @@
 [
   {
     "type": "heading",
-    "defaultValue": "Example Header Item"
+    "defaultValue": "Chrono Ring"
   },
   {
-    "type": "text",
-    "defaultValue": "Example text item"
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Settings"
+      },
+      {
+        "type": "color",
+        "appKey": "hour_text_color",
+        "defaultValue": "000000",
+        "label": "Hour Text Color"
+      },
+      {
+        "type": "color",
+        "appKey": "hour_ring_color",
+        "defaultValue": "AA0055",
+        "label": "Hour Ring Color"
+      },
+      {
+        "type": "color",
+        "appKey": "hour_circle_color",
+        "defaultValue": "FF5555",
+        "label": "Hour Circle Color"
+      },
+      {
+        "type": "color",
+        "appKey": "minute_text_color",
+        "defaultValue": "000000",
+        "label": "Minute Text Color"
+      },
+      {
+        "type": "color",
+        "appKey": "minute_ring_color",
+        "defaultValue": "00AAAA",
+        "label": "Minute Ring Color"
+      }
+    ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save"
   }
 ]

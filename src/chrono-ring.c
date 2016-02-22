@@ -14,6 +14,51 @@ static int s_hour_angle = 0;
 
 static const int RING_CUTOUT_ANGLE = DEG_TO_TRIGANGLE(40);
 
+// CONFIG
+enum APP_MESSAGE_KEYS {
+  HOUR_TEXT_COLOR,
+  HOUR_RING_COLOR,
+  HOUR_CIRCLE_COLOR,
+  MINUTE_TEXT_COLOR,
+  MINUTE_RING_COLOR
+};
+
+static void update_config() {
+  GColor color;
+
+  if (persist_exists(HOUR_TEXT_COLOR)) {
+    color = GColorFromHEX(persist_read_int(HOUR_TEXT_COLOR));
+    text_layer_set_text_color(s_hour_layer, color);
+  }
+
+  if (persist_exists(MINUTE_TEXT_COLOR)) {
+    color = GColorFromHEX(persist_read_int(MINUTE_TEXT_COLOR));
+    text_layer_set_text_color(s_minute_layer, color);
+  }
+
+  layer_mark_dirty(s_canvas_layer);
+}
+
+static void in_dropped_handler(AppMessageResult reason, void *context) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "Incoming message dropped: %d", reason);
+}
+
+static void in_received_handler(DictionaryIterator *received, void *context) {
+  Tuple *tuple;
+
+  for (int key = HOUR_TEXT_COLOR; key <= MINUTE_RING_COLOR; key++) {
+    tuple = dict_find(received, key);
+    if (tuple) {
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "saving appkey: %d, %x", key, (int) tuple->value->int32);
+      persist_write_int(key, tuple->value->int32);
+    }
+    tuple = NULL;
+  }
+
+  update_config();
+}
+
+// UI
 static void update_time_text(struct tm *tick_time) {
   s_minute_angle = fraction_to_angle(tick_time->tm_min, 60);
   static char s_hour_buffer[sizeof("00")];
@@ -60,7 +105,9 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) {
+  APP_LOG(APP_LOG_LEVEL_INFO, "update proc");
   GRect window_bounds = layer_get_bounds(window_get_root_layer(s_main_window));
+  GColor color;
 
   // Hour ring
   static const int offset = 1; // Fix pixel offset
@@ -73,40 +120,49 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   );
   int angle_start = s_hour_angle + (RING_CUTOUT_ANGLE / 2);
   int angle_end = (s_hour_angle - (RING_CUTOUT_ANGLE / 2)) + TRIG_MAX_ANGLE;
-  graphics_context_set_fill_color(ctx, GColorJazzberryJam);
-  graphics_fill_radial(
-      ctx,
-      rect,
-      GOvalScaleModeFitCircle,
-      85, // Inset thickness
-      angle_start,
-      angle_end
-  );
+
+  if (persist_exists(HOUR_RING_COLOR)) {
+    color = GColorFromHEX(persist_read_int(HOUR_RING_COLOR));
+  } else {
+    color = GColorJazzberryJam;
+  }
+  graphics_context_set_fill_color(ctx, color);
+  graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, 85, // Inset thickness
+      angle_start, angle_end);
 
   // Hour circle
-  graphics_context_set_fill_color(ctx, GColorSunsetOrange);
-  graphics_fill_circle(
-      ctx,
-      GPoint(window_bounds.size.w / 2, window_bounds.size.h / 2),
-      35 // radius
-  );
+  if (persist_exists(HOUR_CIRCLE_COLOR)) {
+    color = GColorFromHEX(persist_read_int(HOUR_CIRCLE_COLOR));
+  } else {
+    color = GColorSunsetOrange;
+  }
+  graphics_context_set_fill_color(ctx, color);
+  graphics_fill_circle(ctx,
+      GPoint(window_bounds.size.w / 2, window_bounds.size.h / 2), 35);
 
   // Minute ring
   angle_start = s_minute_angle + (RING_CUTOUT_ANGLE / 2);
   angle_end = (s_minute_angle - (RING_CUTOUT_ANGLE / 2)) + TRIG_MAX_ANGLE;
   rect = layer_get_bounds(window_get_root_layer(s_main_window));
+  if (persist_exists(MINUTE_RING_COLOR)) {
+    color = GColorFromHEX(persist_read_int(MINUTE_RING_COLOR));
+  } else {
+    color = GColorVividCerulean;
+  }
   graphics_context_set_fill_color(ctx, GColorVividCerulean);
-  graphics_fill_radial(
-      ctx,
-      rect,
-      GOvalScaleModeFitCircle,
-      15, // inset thickness
-      angle_start,
-      angle_end
-  );
+  graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, 15, // inset thickness
+      angle_start, angle_end);
 }
 
 static void main_window_load(Window *window) {
+  // App message
+  app_message_register_inbox_dropped(in_dropped_handler);
+  app_message_register_inbox_received(in_received_handler);
+  const int inbox_size = (sizeof(int) * 2) * 5;
+  const int outbox_size = inbox_size;
+  app_message_open(inbox_size, outbox_size);
+
+  // UI
   Layer *window_layer = window_get_root_layer(s_main_window);
   GRect bounds = layer_get_bounds(window_layer);
 
@@ -132,6 +188,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
 
   update();
+  update_config();
 }
 
 static void main_window_unload(Window *window) {

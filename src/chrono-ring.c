@@ -54,9 +54,6 @@ static void update_config() {
     frame = GRect(0, (bounds.size.h / 2) - 35, bounds.size.w, 50);
     layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
 
-    frame = GRect(0, (bounds.size.h / 2) + 8, bounds.size.w, 50);
-    layer_set_frame(text_layer_get_layer(s_date_layer), frame);
-
     color = persist_get_color(KEY_DATE_TEXT_COLOR, GColorBlack);
     text_layer_set_text_color(s_date_layer, color);
 
@@ -66,6 +63,10 @@ static void update_config() {
 
     // Hide the text
     text_layer_set_text_color(s_date_layer, GColorClear);
+
+    // Bug, firmware will not reflect GColorClear change until the
+    // text in the layer has changed
+    text_layer_set_text(s_date_layer, "");
   }
 
   layer_mark_dirty(text_layer_get_layer(s_hour_layer));
@@ -89,7 +90,9 @@ static void update_text(struct tm *tick_time) {
   strftime(s_minute_buffer, sizeof(s_minute_buffer), "%M", tick_time);
   text_layer_set_text(s_minute_layer, s_minute_buffer);
 
-  bool date_enabled = persist_get_bool(KEY_DATE_TEXT_ENABLED, DATE_ENABLED_DEFAULT_VALUE);
+  bool date_enabled = persist_get_bool(KEY_DATE_TEXT_ENABLED,
+      DATE_ENABLED_DEFAULT_VALUE);
+
   if (date_enabled) {
     static char s_date_buffer[sizeof("aaaa 00")];
     strftime(s_date_buffer, sizeof(s_date_buffer), "%b %d", tick_time);
@@ -184,11 +187,7 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     }
   }
 
-  time_t temp = time(NULL);
-  struct tm *tick_time = localtime(&temp);
-
   update_config();
-  update_text(tick_time);
 }
 
 static void main_window_load(Window *window) {

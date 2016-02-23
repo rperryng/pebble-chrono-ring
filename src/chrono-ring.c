@@ -2,8 +2,6 @@
 
 #include "util.h"
 
-#define CENTER_GPOINT GPoint(90, 90)
-
 static Window *s_main_window;
 static TextLayer *s_hour_layer;
 static TextLayer *s_minute_layer;
@@ -87,8 +85,16 @@ static void update_time_text(struct tm *tick_time) {
 static void update_minute_position() {
   const int x = 40;
   const int y = 40;
+
+#if defined(PBL_ROUND)
   const int length = 66;
-  GPoint new_point = gpoint_from_point(CENTER_GPOINT, length, s_minute_angle);
+#else
+  const int length = 59;
+#endif
+
+  GRect window_bounds = layer_get_bounds(window_get_root_layer(s_main_window));
+  GPoint center_gpoint = GPoint(window_bounds.size.w / 2, window_bounds.size.h / 2);
+  GPoint new_point = gpoint_from_point(center_gpoint, length, s_minute_angle);
   GRect frame = GRect(new_point.x - (x / 2), new_point.y - (y / 2), x, y);
   layer_set_frame(text_layer_get_layer(s_minute_layer), frame);
   layer_mark_dirty(text_layer_get_layer(s_minute_layer));
@@ -195,6 +201,8 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, s_canvas_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_hour_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
+
+#define CENTER_GPOINT GPoint(90, 90)
 
   update();
   update_config();

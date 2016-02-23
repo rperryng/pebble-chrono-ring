@@ -133,7 +133,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "update proc");
   GRect window_bounds = layer_get_bounds(window_get_root_layer(s_main_window));
   GColor color;
 

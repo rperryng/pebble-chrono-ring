@@ -8,13 +8,40 @@
     "items": [
       {
         "type": "heading",
-        "defaultValue": "Settings"
+        "defaultValue": "Text"
       },
       {
         "type": "color",
         "appKey": "hour_text_color",
         "defaultValue": "000000",
         "label": "Hour Text Color"
+      },
+      {
+        "type": "color",
+        "appKey": "minute_text_color",
+        "defaultValue": "000000",
+        "label": "Minute Text Color"
+      },
+      {
+        "type": "color",
+        "appKey": "date_text_color",
+        "defaultValue": "000000",
+        "label": "Date Text Color"
+      },
+      {
+        "type": "toggle",
+        "appKey": "date_text_toggle",
+        "defaultValue": "true",
+        "label": "Show date"
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Rings"
       },
       {
         "type": "color",
@@ -27,12 +54,6 @@
         "appKey": "hour_circle_color",
         "defaultValue": "FF5555",
         "label": "Hour Circle Color"
-      },
-      {
-        "type": "color",
-        "appKey": "minute_text_color",
-        "defaultValue": "000000",
-        "label": "Minute Text Color"
       },
       {
         "type": "color",

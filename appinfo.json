@@ -13,11 +13,13 @@
   },
   "appKeys": {
     "hour_text_color": 0,
-    "hour_ring_color": 1,
-    "hour_circle_color": 2,
-    "minute_text_color": 3,
-    "minute_ring_color": 4,
-    "background_color": 5
+    "minute_text_color": 1,
+    "date_text_color": 2,
+    "date_text_toggle": 3,
+    "hour_ring_color": 4,
+    "hour_circle_color": 5,
+    "minute_ring_color": 6,
+    "background_color": 7
   },
   "resources": {
     "media": []

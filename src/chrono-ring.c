@@ -1,10 +1,12 @@
 #include <pebble.h>
 
 #include "util.h"
+#include "persist.h"
 
 static Window *s_main_window;
 static TextLayer *s_hour_layer;
 static TextLayer *s_minute_layer;
+static TextLayer *s_date_layer;
 static Layer *s_canvas_layer;
 
 static int s_minute_angle = 0;
@@ -28,20 +30,14 @@ enum APP_MESSAGE_KEYS {
 static void update_config() {
   GColor color;
 
-  if (persist_exists(HOUR_TEXT_COLOR)) {
-    color = GColorFromHEX(persist_read_int(HOUR_TEXT_COLOR));
-    text_layer_set_text_color(s_hour_layer, color);
-  }
+  color = persist_get_color(HOUR_TEXT_COLOR, GColorBlack);
+  text_layer_set_text_color(s_hour_layer, color);
 
-  if (persist_exists(MINUTE_TEXT_COLOR)) {
-    color = GColorFromHEX(persist_read_int(MINUTE_TEXT_COLOR));
-    text_layer_set_text_color(s_minute_layer, color);
-  }
+  color = persist_get_color(MINUTE_TEXT_COLOR, GColorBlack);
+  text_layer_set_text_color(s_minute_layer, color);
 
-  if (persist_exists(BACKGROUND_COLOR)) {
-    color = GColorFromHEX(persist_read_int(BACKGROUND_COLOR));
-    window_set_background_color(s_main_window, color);
-  }
+  color = persist_get_color(BACKGROUND_COLOR, GColorBlack);
+  window_set_background_color(s_main_window,  color);
 
   layer_mark_dirty(s_canvas_layer);
 }
@@ -85,7 +81,6 @@ static void update_time_text(struct tm *tick_time) {
 static void update_minute_position() {
   const int x = 40;
   const int y = 40;
-
 #if defined(PBL_ROUND)
   const int length = 66;
 #else
@@ -100,16 +95,13 @@ static void update_minute_position() {
   layer_mark_dirty(text_layer_get_layer(s_minute_layer));
 }
 
-static void update_angles(struct tm *tick_time) {
-  s_minute_angle = fraction_to_angle(tick_time->tm_sec, 60);
-  s_hour_angle = fraction_to_angle(tick_time->tm_hour, 24);
-}
-
 static void update() {
   time_t temp = time(NULL);
   struct tm *tick_time = localtime(&temp);
 
-  update_angles(tick_time);
+  s_minute_angle = fraction_to_angle(tick_time->tm_sec, 60);
+  s_hour_angle = fraction_to_angle(tick_time->tm_hour, 24);
+
   update_time_text(tick_time);
   update_minute_position();
   layer_mark_dirty(s_canvas_layer);
@@ -125,32 +117,23 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   GColor color;
 
   // Hour ring
-  static const int offset = 1; // Fix pixel offset
-  static const int radius = 45;
+  const int offset = 1; // Fix pixel offset
+  const int radius = 45;
+  int angle_start = s_hour_angle + (RING_CUTOUT_ANGLE / 2);
+  int angle_end = (s_hour_angle - (RING_CUTOUT_ANGLE / 2)) + TRIG_MAX_ANGLE;
   GRect rect = GRect(
       (window_bounds.size.w / 2) - radius,
       (window_bounds.size.h / 2) - radius,
       radius * 2 + offset,
       radius * 2 + offset
   );
-  int angle_start = s_hour_angle + (RING_CUTOUT_ANGLE / 2);
-  int angle_end = (s_hour_angle - (RING_CUTOUT_ANGLE / 2)) + TRIG_MAX_ANGLE;
-
-  if (persist_exists(HOUR_RING_COLOR)) {
-    color = GColorFromHEX(persist_read_int(HOUR_RING_COLOR));
-  } else {
-    color = GColorJazzberryJam;
-  }
+  color = persist_get_color(HOUR_RING_COLOR, GColorJazzberryJam);
   graphics_context_set_fill_color(ctx, color);
   graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, 85, // Inset thickness
       angle_start, angle_end);
 
-  // Hour circle
-  if (persist_exists(HOUR_CIRCLE_COLOR)) {
-    color = GColorFromHEX(persist_read_int(HOUR_CIRCLE_COLOR));
-  } else {
-    color = GColorSunsetOrange;
-  }
+  // Hour 
+  color = persist_get_color(HOUR_CIRCLE_COLOR, GColorSunsetOrange);
   graphics_context_set_fill_color(ctx, color);
   graphics_fill_circle(ctx,
       GPoint(window_bounds.size.w / 2, window_bounds.size.h / 2), 35);
@@ -159,11 +142,7 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   angle_start = s_minute_angle + (RING_CUTOUT_ANGLE / 2);
   angle_end = (s_minute_angle - (RING_CUTOUT_ANGLE / 2)) + TRIG_MAX_ANGLE;
   rect = layer_get_bounds(window_get_root_layer(s_main_window));
-  if (persist_exists(MINUTE_RING_COLOR)) {
-    color = GColorFromHEX(persist_read_int(MINUTE_RING_COLOR));
-  } else {
-    color = GColorVividCerulean;
-  }
+  color = persist_get_color(MINUTE_RING_COLOR, GColorVividCerulean);
   graphics_context_set_fill_color(ctx, color);
   graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, 15, // inset thickness
       angle_start, angle_end);
@@ -183,14 +162,12 @@ static void main_window_load(Window *window) {
 
   s_hour_layer = text_layer_create(GRect(0, (bounds.size.h / 2) - 25, bounds.size.w, 50));
   text_layer_set_background_color(s_hour_layer, GColorClear);
-  text_layer_set_text_color(s_hour_layer, GColorBlack);
   text_layer_set_font(s_hour_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(s_hour_layer, GTextAlignmentCenter);
   text_layer_set_text(s_hour_layer, "00:00");
 
   s_minute_layer = text_layer_create(GRect(0, 100, bounds.size.w, 30));
   text_layer_set_background_color(s_minute_layer, GColorClear);
-  text_layer_set_text_color(s_minute_layer, GColorBlack);
   text_layer_set_font(s_minute_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
   text_layer_set_text_alignment(s_minute_layer, GTextAlignmentCenter);
   text_layer_set_text(s_minute_layer, "00:00");
@@ -201,8 +178,6 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, s_canvas_layer);
   layer_add_child(window_layer, text_layer_get_layer(s_hour_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
-
-#define CENTER_GPOINT GPoint(90, 90)
 
   update();
   update_config();

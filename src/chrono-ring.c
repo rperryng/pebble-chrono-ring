@@ -164,7 +164,7 @@ static void canvas_update_proc(Layer *layer, GContext *ctx) {
   } else {
     color = GColorVividCerulean;
   }
-  graphics_context_set_fill_color(ctx, GColorVividCerulean);
+  graphics_context_set_fill_color(ctx, color);
   graphics_fill_radial(ctx, rect, GOvalScaleModeFitCircle, 15, // inset thickness
       angle_start, angle_end);
 }

@@ -3,7 +3,7 @@
   "shortName": "Chrono Ring",
   "longName": "Chrono Ring",
   "companyName": "rperryng",
-  "versionLabel": "1.0",
+  "versionLabel": "1.1",
   "sdkVersion": "3",
   "targetPlatforms": ["chalk"],
   "capabilities": ["configurable"],

@@ -121,7 +121,7 @@ static void update() {
   struct tm *tick_time = localtime(&temp);
 
   s_minute_angle = fraction_to_angle(tick_time->tm_sec, 60);
-  s_hour_angle = fraction_to_angle(tick_time->tm_hour, 24);
+  s_hour_angle = fraction_to_angle(tick_time->tm_hour, clock_is_24h_style() ? 24 : 12);
 
   update_text(tick_time);
   update_minute_position();

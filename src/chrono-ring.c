@@ -102,11 +102,7 @@ static void update_text(struct tm *tick_time) {
 static void update_minute_position() {
   const int x = 40;
   const int y = 40;
-#if defined(PBL_ROUND)
-  const int length = 66;
-#else
-  const int length = 59;
-#endif
+  const int length = 70;
 
   GRect window_bounds = layer_get_bounds(window_get_root_layer(s_main_window));
   GPoint center_gpoint = GPoint(window_bounds.size.w / 2, window_bounds.size.h / 2);
@@ -175,6 +171,8 @@ static void in_dropped_handler(AppMessageResult reason, void *context) {
 static void in_received_handler(DictionaryIterator *received, void *context) {
   Tuple *tuple;
 
+  // APP_LOG(APP_LOG_LEVEL_DEBUG, "size: %d", (int)received->end - (int)received->dictionary);
+
   for (int key = KEY_HOUR_TEXT_COLOR; key < NUM_APP_MESSAGE_KEYS; key++) {
     tuple = dict_find(received, key);
     if (!tuple) continue;
@@ -197,7 +195,7 @@ static void main_window_load(Window *window) {
   // App message
   app_message_register_inbox_dropped(in_dropped_handler);
   app_message_register_inbox_received(in_received_handler);
-  const int inbox_size = app_message_inbox_size_maximum();
+  const int inbox_size = 89; // calculated in the in_received_handler
   const int outbox_size = inbox_size;
   app_message_open(inbox_size, outbox_size);
 

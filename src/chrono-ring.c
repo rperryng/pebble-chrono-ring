@@ -4,12 +4,16 @@
 #include "persist.h"
 
 #define DATE_ENABLED_DEFAULT_VALUE true
+#define BT_TEXT_ENABLED_DEFAULT_VALUE true
 
 static Window *s_main_window;
 static TextLayer *s_hour_layer;
 static TextLayer *s_minute_layer;
 static TextLayer *s_date_layer;
+static TextLayer *s_bluetooth_layer;
 static Layer *s_canvas_layer;
+
+static bool s_bt_connected = true;
 
 static int s_minute_angle = 0;
 static int s_hour_angle = 0;
@@ -21,57 +25,73 @@ enum APP_MESSAGE_KEYS {
   KEY_HOUR_TEXT_COLOR,
   KEY_MINUTE_TEXT_COLOR,
   KEY_DATE_TEXT_COLOR,
-  KEY_DATE_TEXT_ENABLED,
+  KEY_DATE_TEXT_TOGGLE,
 
   KEY_HOUR_RING_COLOR,
   KEY_HOUR_CICLE_COLOR,
   KEY_MINUTE_RING_COLOR,
   KEY_BACKGROUND_COLOR,
 
+  KEY_BT_VIBRATE_CONNECTED_TOGGLE,
+  KEY_BT_VIBRATE_DISCONNECTED_TOGGLE,
+  KEY_BT_TEXT_TOGGLE,
+  KEY_BT_TEXT_COLOR,
+
   // The value of the last element in an enum is the number of items
   NUM_APP_MESSAGE_KEYS
 };
 
+static void update_text_frames() {
+  GRect bounds = layer_get_bounds(window_get_root_layer(s_main_window));
+  GRect frame;
+
+  bool date_enabled = persist_get_bool(KEY_DATE_TEXT_TOGGLE,
+      DATE_ENABLED_DEFAULT_VALUE);
+  bool bt_text_enabled = persist_get_bool(KEY_BT_TEXT_TOGGLE,
+      DATE_ENABLED_DEFAULT_VALUE);
+
+  if (bt_text_enabled && !s_bt_connected && date_enabled) {
+    frame = GRect(0, (bounds.size.h / 2) - 28, bounds.size.w, 50);
+    layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
+
+    frame = GRect(0, (bounds.size.h / 2) + 12, bounds.size.w, 50);
+    layer_set_frame(text_layer_get_layer(s_date_layer), frame);
+
+  } else if (date_enabled) {
+    frame = GRect(0, (bounds.size.h / 2) - 35, bounds.size.w, 50);
+    layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
+
+    frame = GRect(0, (bounds.size.h / 2) + 8, bounds.size.w, 50);
+    layer_set_frame(text_layer_get_layer(s_date_layer), frame);
+
+  } else {
+    frame = GRect(0, (bounds.size.h / 2) - 28, bounds.size.w, 50);
+    layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
+  }
+
+  layer_mark_dirty(text_layer_get_layer(s_hour_layer));
+  layer_mark_dirty(text_layer_get_layer(s_date_layer));
+  layer_mark_dirty(text_layer_get_layer(s_bluetooth_layer));
+  layer_mark_dirty(s_canvas_layer);
+}
+
 static void update_config() {
   GColor color;
 
+  // Colors
   color = persist_get_color(KEY_HOUR_TEXT_COLOR, GColorBlack);
   text_layer_set_text_color(s_hour_layer, color);
 
   color = persist_get_color(KEY_MINUTE_TEXT_COLOR, GColorBlack);
   text_layer_set_text_color(s_minute_layer, color);
 
+  color = persist_get_color(KEY_BT_TEXT_COLOR, GColorWhite);
+  text_layer_set_text_color(s_bluetooth_layer, color);
+
   color = persist_get_color(KEY_BACKGROUND_COLOR, GColorWhite);
   window_set_background_color(s_main_window,  color);
 
-  GRect bounds = layer_get_bounds(window_get_root_layer(s_main_window));
-  GRect frame;
-
-  bool date_enabled = persist_get_bool(KEY_DATE_TEXT_ENABLED,
-      DATE_ENABLED_DEFAULT_VALUE);
-
-  if (date_enabled) {
-    frame = GRect(0, (bounds.size.h / 2) - 35, bounds.size.w, 50);
-    layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
-
-    color = persist_get_color(KEY_DATE_TEXT_COLOR, GColorBlack);
-    text_layer_set_text_color(s_date_layer, color);
-
-  } else {
-    frame = GRect(0, (bounds.size.h / 2) - 28, bounds.size.w, 50);
-    layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
-
-    // Hide the text
-    text_layer_set_text_color(s_date_layer, GColorClear);
-
-    // Bug, firmware will not reflect GColorClear change until the
-    // text in the layer has changed
-    text_layer_set_text(s_date_layer, "");
-  }
-
-  layer_mark_dirty(text_layer_get_layer(s_hour_layer));
-  layer_mark_dirty(text_layer_get_layer(s_date_layer));
-  layer_mark_dirty(s_canvas_layer);
+  update_text_frames();
 }
 
 // UI ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -90,16 +110,23 @@ static void update_text(struct tm *tick_time) {
   strftime(s_minute_buffer, sizeof(s_minute_buffer), "%M", tick_time);
   text_layer_set_text(s_minute_layer, s_minute_buffer);
 
-  bool date_enabled = persist_get_bool(KEY_DATE_TEXT_ENABLED,
+  bool date_text_enabled = persist_get_bool(KEY_DATE_TEXT_TOGGLE,
       DATE_ENABLED_DEFAULT_VALUE);
-
-  if (date_enabled) {
+  if (date_text_enabled) {
     static char s_date_buffer[sizeof("aaaa 00")];
     strftime(s_date_buffer, sizeof(s_date_buffer), "%b %d", tick_time);
     text_layer_set_text(s_date_layer, s_date_buffer);
   } else {
     text_layer_set_text(s_date_layer, "");
   }
+
+  bool bt_text_enabled = persist_get_bool(KEY_BT_TEXT_TOGGLE,
+      BT_TEXT_ENABLED_DEFAULT_VALUE);
+
+  char* bt_text = (bt_text_enabled && !s_bt_connected) ? "D/C" : "";
+  static char s_bt_text[sizeof("D/C")];
+  strncpy(s_bt_text, bt_text, sizeof(bt_text));
+  text_layer_set_text(s_bluetooth_layer, s_bt_text);
 }
 
 static void update_minute_position() {
@@ -129,6 +156,26 @@ static void update() {
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update();
+}
+
+static void app_connection_handler(bool connected) {
+  s_bt_connected = connected;
+
+  bool vibrate_on_connect = persist_get_bool(KEY_BT_VIBRATE_CONNECTED_TOGGLE,
+      true);
+  bool vibrate_on_disconnect = persist_get_bool(KEY_BT_VIBRATE_DISCONNECTED_TOGGLE,
+      true);
+
+  bool should_vibrate =
+      (vibrate_on_connect && connected) ||
+      (vibrate_on_disconnect && !connected);
+
+  if (should_vibrate) {
+    vibes_long_pulse();
+  }
+
+  update();
+  update_config();
 }
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) {
@@ -180,10 +227,16 @@ static void in_received_handler(DictionaryIterator *received, void *context) {
     tuple = dict_find(received, key);
     if (!tuple) continue;
 
-    if (key == KEY_DATE_TEXT_ENABLED) {
-      persist_write_bool(key, tuple->value->int32);
-    } else {
-      persist_write_int(key, tuple->value->int32);
+    switch (key) {
+      case KEY_DATE_TEXT_TOGGLE:
+      case KEY_BT_VIBRATE_CONNECTED_TOGGLE:
+      case KEY_BT_VIBRATE_DISCONNECTED_TOGGLE:
+      case KEY_BT_TEXT_TOGGLE:
+        persist_write_bool(key, tuple->value->int32);
+        break;
+
+      default:
+        persist_write_int(key, tuple->value->int32);
     }
   }
 
@@ -194,7 +247,7 @@ static void main_window_load(Window *window) {
   // App message
   app_message_register_inbox_dropped(in_dropped_handler);
   app_message_register_inbox_received(in_received_handler);
-  const int inbox_size = 89; // calculated in the in_received_handler
+  const int inbox_size = 133; // calculated in the in_received_handler
   const int outbox_size = inbox_size;
   app_message_open(inbox_size, outbox_size);
 
@@ -203,7 +256,7 @@ static void main_window_load(Window *window) {
   GRect bounds = layer_get_bounds(window_layer);
 
   s_hour_layer = text_layer_create(GRect(
-        0, (bounds.size.h / 2) - 35, bounds.size.w, 50));
+        0, (bounds.size.h / 2) - 28, bounds.size.w, 50));
   text_layer_set_background_color(s_hour_layer, GColorClear);
   text_layer_set_font(s_hour_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(s_hour_layer, GTextAlignmentCenter);
@@ -216,11 +269,18 @@ static void main_window_load(Window *window) {
   text_layer_set_text(s_minute_layer, "00:00");
 
   s_date_layer = text_layer_create(GRect(
-        0, (bounds.size.h / 2) + 8, bounds.size.w, 50));
+        0, (bounds.size.h / 2) + 12, bounds.size.w, 50));
   text_layer_set_background_color(s_date_layer, GColorClear);
   text_layer_set_font(s_date_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
   text_layer_set_text_alignment(s_date_layer, GTextAlignmentCenter);
   text_layer_set_text(s_date_layer, "00:00");
+
+  s_bluetooth_layer = text_layer_create(GRect(
+        0, (bounds.size.h / 2) - 40, bounds.size.w, 50));
+  text_layer_set_background_color(s_bluetooth_layer, GColorClear);
+  text_layer_set_font(s_bluetooth_layer, fonts_get_system_font(FONT_KEY_GOTHIC_18_BOLD));
+  text_layer_set_text_alignment(s_bluetooth_layer, GTextAlignmentCenter);
+  text_layer_set_text(s_bluetooth_layer, "D/C");
 
   s_canvas_layer = layer_create(GRect(0, 0, bounds.size.w, bounds.size.h));
   layer_set_update_proc(s_canvas_layer, canvas_update_proc);
@@ -229,6 +289,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_layer, text_layer_get_layer(s_hour_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_minute_layer));
   layer_add_child(window_layer, text_layer_get_layer(s_date_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_bluetooth_layer));
 
   update();
   update_config();
@@ -238,6 +299,7 @@ static void main_window_unload(Window *window) {
   text_layer_destroy(s_hour_layer);
   text_layer_destroy(s_minute_layer);
   text_layer_destroy(s_date_layer);
+  text_layer_destroy(s_bluetooth_layer);
   layer_destroy(s_canvas_layer);
 }
 
@@ -252,6 +314,9 @@ static void init() {
   window_stack_push(s_main_window, true);
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  connection_service_subscribe((ConnectionHandlers) {
+      .pebble_app_connection_handler = app_connection_handler
+  });
 }
 
 static void deinit() {

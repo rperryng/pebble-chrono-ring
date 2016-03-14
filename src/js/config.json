@@ -70,6 +70,39 @@
     ]
   },
   {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Bluetooth"
+      },
+      {
+        "type": "toggle",
+        "appKey": "bluetooth_vibrate_connected_toggle",
+        "defaultValue": true,
+        "label": "Vibrate On Bluetooth Connected"
+      },
+      {
+        "type": "toggle",
+        "appKey": "bluetooth_vibrate_disconnected_toggle",
+        "defaultvalue": true,
+        "label": "Vibrate On Bluetooth Disconnected"
+      },
+      {
+        "type": "toggle",
+        "appKey": "bluetooth_text_toggle",
+        "defaultValue": true,
+        "label": "Show D/C When Disconnected"
+      },
+      {
+        "type": "color",
+        "appKey": "bluetooth_text_color",
+        "defaultvalue": "FFFFFF",
+        "label": "Text Color"
+      }
+    ]
+  },
+  {
     "type": "submit",
     "defaultValue": "Save"
   }

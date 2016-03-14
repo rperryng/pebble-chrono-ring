@@ -85,6 +85,9 @@ static void update_config() {
   color = persist_get_color(KEY_MINUTE_TEXT_COLOR, GColorBlack);
   text_layer_set_text_color(s_minute_layer, color);
 
+  color = persist_get_color(KEY_DATE_TEXT_COLOR, GColorBlack);
+  text_layer_set_text_color(s_date_layer, color);
+
   color = persist_get_color(KEY_BT_TEXT_COLOR, GColorWhite);
   text_layer_set_text_color(s_bluetooth_layer, color);
 

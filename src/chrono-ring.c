@@ -69,10 +69,10 @@ static void update_text_frames() {
     layer_set_frame(text_layer_get_layer(s_hour_layer), frame);
   }
 
+  layer_mark_dirty(s_canvas_layer);
   layer_mark_dirty(text_layer_get_layer(s_hour_layer));
   layer_mark_dirty(text_layer_get_layer(s_date_layer));
   layer_mark_dirty(text_layer_get_layer(s_bluetooth_layer));
-  layer_mark_dirty(s_canvas_layer);
 }
 
 static void update_config() {
@@ -161,6 +161,15 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update();
 }
 
+static void app_timer_callback(void *data) {
+  update();
+}
+
+static void focus_handler(bool in_focus) {
+  if (!in_focus) return;
+  app_timer_register(0, app_timer_callback, NULL);
+}
+
 static void app_connection_handler(bool connected) {
   s_bt_connected = connected;
 
@@ -178,7 +187,6 @@ static void app_connection_handler(bool connected) {
   }
 
   update();
-  update_config();
 }
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) {
@@ -317,6 +325,7 @@ static void init() {
   window_stack_push(s_main_window, true);
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+  app_focus_service_subscribe(focus_handler);
   connection_service_subscribe((ConnectionHandlers) {
       .pebble_app_connection_handler = app_connection_handler
   });

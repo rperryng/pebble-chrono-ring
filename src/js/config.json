@@ -85,7 +85,7 @@
       {
         "type": "toggle",
         "appKey": "bluetooth_vibrate_disconnected_toggle",
-        "defaultvalue": true,
+        "defaultValue": true,
         "label": "Vibrate On Bluetooth Disconnected"
       },
       {

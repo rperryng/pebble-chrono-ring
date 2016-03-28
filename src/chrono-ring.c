@@ -187,6 +187,7 @@ static void app_connection_handler(bool connected) {
   }
 
   update();
+  update_config();
 }
 
 static void canvas_update_proc(Layer *layer, GContext *ctx) {
